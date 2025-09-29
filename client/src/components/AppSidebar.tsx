@@ -10,7 +10,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
-import { useLocation } from "wouter";
+import { Link } from "wouter";
 import {
   LayoutDashboard,
   Users,
@@ -161,7 +161,6 @@ export function AppSidebar({
   userName = 'John Doe',
   userAvatar
 }: AppSidebarProps) {
-  const [, navigate] = useLocation();
   const roleInfo = roleConfig[userRole];
   const userInitials = userName.split(' ').map(n => n[0]).join('').toUpperCase();
   const currentMenuItems = menuItems[userRole] || menuItems.student;
@@ -205,13 +204,10 @@ export function AppSidebar({
                       asChild
                       data-testid={`nav-item-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
                     >
-                      <button
-                        onClick={() => navigate(item.url)}
-                        className="w-full text-left flex items-center gap-2"
-                      >
+                      <Link href={item.url} className="w-full text-left flex items-center gap-2">
                         <item.icon className="h-4 w-4" />
                         <span>{item.title}</span>
-                      </button>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
