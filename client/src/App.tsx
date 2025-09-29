@@ -14,6 +14,37 @@ import { AdminPortal } from "./components/AdminPortal";
 import { TeacherPortal } from "./components/TeacherPortal";
 import { StudentPortal } from "./components/StudentPortal";
 import { ParentPortal } from "./components/ParentPortal";
+import { Component, ReactNode } from "react";
+
+class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error?: Error }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: any) {
+    console.error('React Error Boundary caught an error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '20px', background: '#fee', border: '1px solid #fcc', margin: '20px' }}>
+          <h2>Something went wrong.</h2>
+          <details style={{ whiteSpace: 'pre-wrap' }}>
+            {this.state.error && this.state.error.toString()}
+          </details>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 function HomePage() {
   const [, navigate] = useLocation();
@@ -64,15 +95,18 @@ function Router() {
 }
 
 function App() {
+  console.log('App component rendering');
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <ThemeProvider>
-          <Router />
-          <Toaster />
-        </ThemeProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <ThemeProvider>
+            <Router />
+            <Toaster />
+          </ThemeProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 
