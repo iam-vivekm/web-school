@@ -204,7 +204,7 @@ export function AppSidebar({
                       asChild
                       data-testid={`nav-item-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
                     >
-                      <Link href={item.url} className="w-full text-left flex items-center gap-2">
+                      <Link href={item.url}>
                         <item.icon className="h-4 w-4" />
                         <span>{item.title}</span>
                       </Link>
