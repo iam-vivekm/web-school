@@ -20,25 +20,32 @@ export function SigninPage() {
     setError(''); // Clear error when user types
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Get stored users
-    const users = JSON.parse(localStorage.getItem('eduManage_users') || '[]');
+    try {
+      const response = await fetch('/api/auth/signin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
 
-    // Find user by email and password
-    const user = users.find((u: any) =>
-      u.email === formData.email && u.password === formData.password
-    );
+      const result = await response.json();
 
-    if (user) {
-      // Set current user session
-      localStorage.setItem('eduManage_currentUser', JSON.stringify(user));
+      if (response.ok) {
+        // Set current user session
+        localStorage.setItem('eduManage_currentUser', JSON.stringify(result));
 
-      // Navigate to appropriate dashboard
-      navigate(`/${user.role}/dashboard`);
-    } else {
-      setError('Invalid email or password');
+        // Navigate to appropriate dashboard
+        navigate(`/${result.role}/dashboard`);
+      } else {
+        setError(result.message || 'Signin failed');
+      }
+    } catch (error) {
+      console.error('Signin error:', error);
+      setError('Signin failed. Please try again.');
     }
   };
 

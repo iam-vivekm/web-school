@@ -31,7 +31,7 @@ export function SignupPage() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validate passwords match
@@ -42,30 +42,45 @@ export function SignupPage() {
 
     // Create user object
     const userData = {
-      id: Date.now().toString(),
       role: selectedRole,
       firstName: formData.firstName,
       lastName: formData.lastName,
       email: formData.email,
       phone: formData.phone,
-      password: formData.password, // In real app, this would be hashed
+      password: formData.password,
       employeeId: formData.employeeId,
       studentId: formData.studentId,
       parentRelation: formData.parentRelation,
       department: formData.department,
       class: formData.class,
       section: formData.section,
-      createdAt: new Date().toISOString()
     };
 
-    // Store user data in localStorage (demo purposes only)
-    const existingUsers = JSON.parse(localStorage.getItem('eduManage_users') || '[]');
-    existingUsers.push(userData);
-    localStorage.setItem('eduManage_users', JSON.stringify(existingUsers));
+    try {
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
 
-    // Show success message and redirect to signin
-    alert(`Account created successfully! You can now sign in with your email: ${formData.email}`);
-    navigate('/signin');
+      const result = await response.json();
+
+      if (response.ok) {
+        // Store user session
+        localStorage.setItem('eduManage_currentUser', JSON.stringify(result));
+
+        // Show success message and redirect to dashboard
+        alert(`Account created successfully! Welcome ${result.firstName} ${result.lastName}!`);
+        navigate(`/${result.role}/dashboard`);
+      } else {
+        alert(result.message || 'Signup failed');
+      }
+    } catch (error) {
+      console.error('Signup error:', error);
+      alert('Signup failed. Please try again.');
+    }
   };
 
   const roleConfig = {
