@@ -10,6 +10,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
+import { useLocation } from "wouter";
 import {
   LayoutDashboard,
   Users,
@@ -22,7 +23,8 @@ import {
   Settings,
   FileText,
   UserCheck,
-  School
+  School,
+  TrendingUp
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -38,33 +40,33 @@ const menuItems = {
     {
       title: "Overview",
       items: [
-        { title: "Dashboard", url: "/", icon: LayoutDashboard },
-        { title: "Analytics", url: "/analytics", icon: FileText },
+        { title: "Dashboard", url: "/admin/dashboard", icon: LayoutDashboard },
+        { title: "Analytics", url: "/admin/analytics", icon: FileText },
       ]
     },
     {
       title: "Management",
       items: [
-        { title: "Students", url: "/students", icon: Users },
-        { title: "Teachers", url: "/teachers", icon: GraduationCap },
-        { title: "Classes", url: "/classes", icon: School },
-        { title: "Subjects", url: "/subjects", icon: BookOpen },
+        { title: "Students", url: "/admin/students", icon: Users },
+        { title: "Teachers", url: "/admin/teachers", icon: GraduationCap },
+        { title: "Parents", url: "/admin/parents", icon: Users },
+        { title: "Classes", url: "/admin/classes", icon: School },
       ]
     },
     {
       title: "Operations",
       items: [
-        { title: "Attendance", url: "/attendance", icon: UserCheck },
-        { title: "Timetable", url: "/timetable", icon: Calendar },
-        { title: "Fee Management", url: "/fees", icon: DollarSign },
-        { title: "Exams & Results", url: "/exams", icon: ClipboardCheck },
+        { title: "Attendance", url: "/admin/attendance", icon: UserCheck },
+        { title: "Timetable", url: "/admin/timetable", icon: Calendar },
+        { title: "Fee Management", url: "/admin/fees", icon: DollarSign },
+        { title: "Exams & Results", url: "/admin/exams", icon: ClipboardCheck },
       ]
     },
     {
       title: "Communication",
       items: [
-        { title: "Notice Board", url: "/notices", icon: MessageSquare },
-        { title: "Messages", url: "/messages", icon: MessageSquare },
+        { title: "Notice Board", url: "/admin/notices", icon: MessageSquare },
+        { title: "Messages", url: "/admin/messages", icon: MessageSquare },
       ]
     }
   ],
@@ -72,19 +74,25 @@ const menuItems = {
     {
       title: "Teaching",
       items: [
-        { title: "Dashboard", url: "/", icon: LayoutDashboard },
-        { title: "My Classes", url: "/classes", icon: School },
-        { title: "Students", url: "/students", icon: Users },
-        { title: "Attendance", url: "/attendance", icon: UserCheck },
+        { title: "Dashboard", url: "/teacher/dashboard", icon: LayoutDashboard },
+        { title: "My Classes", url: "/teacher/classes", icon: School },
+        { title: "Students", url: "/teacher/students", icon: Users },
+        { title: "Attendance", url: "/teacher/attendance", icon: UserCheck },
       ]
     },
     {
       title: "Academic",
       items: [
-        { title: "Timetable", url: "/timetable", icon: Calendar },
-        { title: "Assignments", url: "/assignments", icon: BookOpen },
-        { title: "Gradebook", url: "/grades", icon: ClipboardCheck },
-        { title: "Exams", url: "/exams", icon: FileText },
+        { title: "Timetable", url: "/teacher/timetable", icon: Calendar },
+        { title: "Assignments", url: "/teacher/assignments", icon: BookOpen },
+        { title: "Gradebook", url: "/teacher/grades", icon: ClipboardCheck },
+        { title: "Exams", url: "/teacher/exams", icon: FileText },
+      ]
+    },
+    {
+      title: "Communication",
+      items: [
+        { title: "Messages", url: "/teacher/messages", icon: MessageSquare },
       ]
     }
   ],
@@ -92,18 +100,25 @@ const menuItems = {
     {
       title: "Academic",
       items: [
-        { title: "Dashboard", url: "/", icon: LayoutDashboard },
-        { title: "Timetable", url: "/timetable", icon: Calendar },
-        { title: "Assignments", url: "/assignments", icon: BookOpen },
-        { title: "Grades", url: "/grades", icon: ClipboardCheck },
+        { title: "Dashboard", url: "/student/dashboard", icon: LayoutDashboard },
+        { title: "Timetable", url: "/student/timetable", icon: Calendar },
+        { title: "Assignments", url: "/student/assignments", icon: BookOpen },
+        { title: "Grades", url: "/student/grades", icon: ClipboardCheck },
       ]
     },
     {
       title: "School Life",
       items: [
-        { title: "Attendance", url: "/attendance", icon: UserCheck },
-        { title: "Notices", url: "/notices", icon: MessageSquare },
-        { title: "Fee Status", url: "/fees", icon: DollarSign },
+        { title: "Attendance", url: "/student/attendance", icon: UserCheck },
+        { title: "Exams", url: "/student/exams", icon: FileText },
+        { title: "Notices", url: "/student/notices", icon: MessageSquare },
+        { title: "Fee Status", url: "/student/fees", icon: DollarSign },
+      ]
+    },
+    {
+      title: "Communication",
+      items: [
+        { title: "Messages", url: "/student/messages", icon: MessageSquare },
       ]
     }
   ],
@@ -111,18 +126,24 @@ const menuItems = {
     {
       title: "Child's Progress",
       items: [
-        { title: "Dashboard", url: "/", icon: LayoutDashboard },
-        { title: "Attendance", url: "/attendance", icon: UserCheck },
-        { title: "Grades & Results", url: "/grades", icon: ClipboardCheck },
-        { title: "Timetable", url: "/timetable", icon: Calendar },
+        { title: "Dashboard", url: "/parent/dashboard", icon: LayoutDashboard },
+        { title: "Attendance", url: "/parent/attendance", icon: UserCheck },
+        { title: "Grades & Results", url: "/parent/grades", icon: ClipboardCheck },
+        { title: "Timetable", url: "/parent/timetable", icon: Calendar },
       ]
     },
     {
       title: "Communication",
       items: [
-        { title: "Notices", url: "/notices", icon: MessageSquare },
-        { title: "Teacher Messages", url: "/messages", icon: MessageSquare },
-        { title: "Fee Management", url: "/fees", icon: DollarSign },
+        { title: "Notices", url: "/parent/notices", icon: MessageSquare },
+        { title: "Teacher Messages", url: "/parent/messages", icon: MessageSquare },
+        { title: "Fee Management", url: "/parent/fees", icon: DollarSign },
+      ]
+    },
+    {
+      title: "Other",
+      items: [
+        { title: "Child Progress", url: "/parent/child-progress", icon: TrendingUp },
       ]
     }
   ]
@@ -135,11 +156,12 @@ const roleConfig = {
   parent: { label: "Parent", color: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200" }
 };
 
-export function AppSidebar({ 
+export function AppSidebar({
   userRole = 'student',
   userName = 'John Doe',
-  userAvatar 
+  userAvatar
 }: AppSidebarProps) {
+  const [, navigate] = useLocation();
   const roleInfo = roleConfig[userRole];
   const userInitials = userName.split(' ').map(n => n[0]).join('').toUpperCase();
   const currentMenuItems = menuItems[userRole] || menuItems.student;
@@ -179,14 +201,17 @@ export function AppSidebar({
               <SidebarMenu>
                 {group.items.map((item) => (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton 
+                    <SidebarMenuButton
                       asChild
                       data-testid={`nav-item-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
                     >
-                      <a href={item.url}>
+                      <button
+                        onClick={() => navigate(item.url)}
+                        className="w-full text-left flex items-center gap-2"
+                      >
                         <item.icon className="h-4 w-4" />
                         <span>{item.title}</span>
-                      </a>
+                      </button>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
