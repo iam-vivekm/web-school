@@ -283,10 +283,9 @@ const ParentMessages = () => (
 );
 
 export function ParentPortal() {
-  const params = useParams();
-  const [, navigate] = useLocation();
-
-  const page = params.page || 'dashboard';
+  const [location, navigate] = useLocation();
+  const pathParts = location.split('/').filter(Boolean);
+  const page = pathParts.length > 1 ? pathParts[1] : 'dashboard';
   const userName = 'Rajesh Sharma';
 
   const handleLogout = () => navigate('/');
