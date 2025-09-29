@@ -1,4 +1,4 @@
-import { useParams, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { Dashboard } from "./Dashboard";
@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/button";
 import { School } from "lucide-react";
 
 export function AdminPortal() {
-  const params = useParams();
-  const [, navigate] = useLocation();
-  const page = params.page || 'dashboard';
+  const [location, navigate] = useLocation();
+  const pathParts = location.split('/').filter(Boolean);
+  const page = pathParts.length > 1 ? pathParts[1] : 'dashboard';
 
   const handleLogout = () => navigate('/');
 
