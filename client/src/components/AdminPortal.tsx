@@ -904,12 +904,21 @@ export function AdminPortal() {
   const pathParts = location.split('/').filter(Boolean);
   const page = pathParts.length > 1 ? pathParts[1] : 'dashboard';
 
-  const handleLogout = () => navigate('/');
+  // Get current user from localStorage
+  const currentUser = JSON.parse(localStorage.getItem('eduManage_currentUser') || '{}');
+  const userName = currentUser.firstName && currentUser.lastName
+    ? `${currentUser.firstName} ${currentUser.lastName}`
+    : 'Administrator';
+
+  const handleLogout = () => {
+    localStorage.removeItem('eduManage_currentUser');
+    navigate('/');
+  };
 
   const renderPage = () => {
     switch(page) {
       case 'dashboard':
-        return <Dashboard userRole="admin" userName="Dr. Ramesh Patel" />;
+        return <Dashboard userRole="admin" userName={userName} />;
       case 'students':
         return <AdminStudents />;
       case 'teachers':
@@ -941,7 +950,7 @@ export function AdminPortal() {
   return (
     <SidebarProvider style={style as React.CSSProperties}>
       <div className="flex h-screen w-full">
-        <AppSidebar userRole="admin" userName="Dr. Ramesh Patel" />
+        <AppSidebar userRole="admin" userName={userName} />
         <div className="flex flex-col flex-1">
           <header className="flex items-center justify-between p-4 border-b bg-background">
             <div className="flex items-center gap-4">

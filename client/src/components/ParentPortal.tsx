@@ -286,7 +286,12 @@ export function ParentPortal() {
   const [location, navigate] = useLocation();
   const pathParts = location.split('/').filter(Boolean);
   const page = pathParts.length > 1 ? pathParts[1] : 'dashboard';
-  const userName = 'Rajesh Sharma';
+
+  // Get current user from localStorage
+  const currentUser = JSON.parse(localStorage.getItem('eduManage_currentUser') || '{}');
+  const userName = currentUser.firstName && currentUser.lastName
+    ? `${currentUser.firstName} ${currentUser.lastName}`
+    : 'Parent';
 
   const handleLogout = () => navigate('/');
 

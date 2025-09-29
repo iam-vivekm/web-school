@@ -459,7 +459,12 @@ export function TeacherPortal() {
   const [location, navigate] = useLocation();
   const pathParts = location.split('/').filter(Boolean);
   const page = pathParts.length > 1 ? pathParts[1] : 'dashboard';
-  const userName = 'Dr. Priya Sharma';
+
+  // Get current user from localStorage
+  const currentUser = JSON.parse(localStorage.getItem('eduManage_currentUser') || '{}');
+  const userName = currentUser.firstName && currentUser.lastName
+    ? `${currentUser.firstName} ${currentUser.lastName}`
+    : 'Teacher';
 
   const handleLogout = () => navigate('/');
 
