@@ -63,11 +63,9 @@ export function SignupPage() {
     existingUsers.push(userData);
     localStorage.setItem('eduManage_users', JSON.stringify(existingUsers));
 
-    // Set current user session
-    localStorage.setItem('eduManage_currentUser', JSON.stringify(userData));
-
-    // Navigate to dashboard
-    navigate(`/${selectedRole}/dashboard`);
+    // Show success message and redirect to signin
+    alert(`Account created successfully! You can now sign in with your email: ${formData.email}`);
+    navigate('/signin');
   };
 
   const roleConfig = {
