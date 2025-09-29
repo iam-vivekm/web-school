@@ -33,10 +33,40 @@ export function SignupPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Here you would typically send the data to your backend
-    console.log('Signup data:', { role: selectedRole, ...formData });
 
-    // For now, just navigate to the role's dashboard
+    // Validate passwords match
+    if (formData.password !== formData.confirmPassword) {
+      alert('Passwords do not match!');
+      return;
+    }
+
+    // Create user object
+    const userData = {
+      id: Date.now().toString(),
+      role: selectedRole,
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      email: formData.email,
+      phone: formData.phone,
+      password: formData.password, // In real app, this would be hashed
+      employeeId: formData.employeeId,
+      studentId: formData.studentId,
+      parentRelation: formData.parentRelation,
+      department: formData.department,
+      class: formData.class,
+      section: formData.section,
+      createdAt: new Date().toISOString()
+    };
+
+    // Store user data in localStorage (demo purposes only)
+    const existingUsers = JSON.parse(localStorage.getItem('eduManage_users') || '[]');
+    existingUsers.push(userData);
+    localStorage.setItem('eduManage_users', JSON.stringify(existingUsers));
+
+    // Set current user session
+    localStorage.setItem('eduManage_currentUser', JSON.stringify(userData));
+
+    // Navigate to dashboard
     navigate(`/${selectedRole}/dashboard`);
   };
 
@@ -294,6 +324,18 @@ export function SignupPage() {
                   Create {roleConfig[selectedRole].label} Account
                 </Button>
               </form>
+
+              <div className="mt-6 text-center">
+                <p className="text-muted-foreground">
+                  Already have an account?{' '}
+                  <button
+                    onClick={() => navigate('/signin')}
+                    className="text-primary hover:underline font-medium"
+                  >
+                    Sign in here
+                  </button>
+                </p>
+              </div>
             </CardContent>
           </Card>
         </div>

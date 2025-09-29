@@ -15,6 +15,7 @@ import { TeacherPortal } from "./components/TeacherPortal";
 import { StudentPortal } from "./components/StudentPortal";
 import { ParentPortal } from "./components/ParentPortal";
 import { SignupPage } from "./components/SignupPage";
+import { SigninPage } from "./components/SigninPage";
 import { Component, ReactNode } from "react";
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error?: Error }> {
@@ -63,6 +64,10 @@ function HomePage() {
             <span className="font-bold text-xl font-heading">EduManage</span>
           </div>
           <div className="flex items-center gap-4">
+            <Button variant="outline" onClick={() => navigate('/signin')} className="flex items-center gap-2">
+              <LogIn className="h-4 w-4" />
+              Sign In
+            </Button>
             <Button variant="outline" onClick={() => navigate('/signup')} className="flex items-center gap-2">
               <LogIn className="h-4 w-4" />
               Sign Up
@@ -103,6 +108,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={HomePage} />
+      <Route path="/signin" component={SigninPage} />
       <Route path="/signup" component={SignupPage} />
       <Route path="/admin" component={AdminPortal} />
       <Route path="/admin/:page*" component={AdminPortal} />
