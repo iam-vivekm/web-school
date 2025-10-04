@@ -57,6 +57,7 @@ export function SignupPage() {
     };
 
     try {
+      console.log('Sending signup request:', userData);
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: {
@@ -65,7 +66,9 @@ export function SignupPage() {
         body: JSON.stringify(userData),
       });
 
+      console.log('Response status:', response.status);
       const result = await response.json();
+      console.log('Response data:', result);
 
       if (response.ok) {
         // Store user session
@@ -75,11 +78,11 @@ export function SignupPage() {
         alert(`Account created successfully! Welcome ${result.firstName} ${result.lastName}!`);
         navigate(`/${result.role}/dashboard`);
       } else {
-        alert(result.message || 'Signup failed');
+        alert(`Signup failed: ${result.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Signup error:', error);
-      alert('Signup failed. Please try again.');
+      alert(`Signup failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
