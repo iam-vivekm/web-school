@@ -10,19 +10,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Signup endpoint
   app.post("/api/auth/signup", async (req, res) => {
     try {
+      console.log("Received signup request:", req.body);
       const userData = insertUserSchema.parse(req.body);
+      console.log("Parsed user data:", userData);
 
       // Try to create user - database will handle unique constraint
       const user = await storage.createUser(userData);
+      console.log("Created user:", user);
       // Don't send password back to client
       const { password, ...userWithoutPassword } = user;
       res.status(201).json(userWithoutPassword);
     } catch (error: any) {
       console.error("Signup error:", error);
+      console.error("Error details:", error.message);
       if (error.message?.includes('duplicate key') || error.message?.includes('unique constraint') || error.message?.includes('already exists')) {
         res.status(400).json({ message: "User with this email already exists" });
       } else {
-        res.status(400).json({ message: "Invalid user data" });
+        res.status(400).json({ message: "Invalid user data: " + error.message });
       }
     }
   });
