@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, date, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -71,3 +71,40 @@ export const insertUserSchema = createInsertSchema(users)
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+export const attendance = pgTable("attendance", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  studentId: varchar("student_id").notNull().references(() => users.id),
+  date: date("date").notNull(),
+  status: varchar("status").notNull(), // 'present' | 'absent'
+  markedBy: varchar("marked_by").notNull().references(() => users.id),
+  subject: text("subject"),
+  class: varchar("class").notNull(),
+  section: varchar("section").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  studentDateUnique: unique("studentDateUnique").on(table.studentId, table.date),
+}));
+
+export const insertAttendanceSchema = createInsertSchema(attendance)
+  .pick({
+    studentId: true,
+    date: true,
+    status: true,
+    markedBy: true,
+    subject: true,
+    class: true,
+    section: true,
+  })
+  .refine((data) => {
+    return data.status === 'present' || data.status === 'absent';
+  }, {
+    message: "Status must be either 'present' or 'absent'",
+  })
+  .transform((data) => ({
+    ...data,
+    subject: data.subject && data.subject.trim() !== '' ? data.subject : null,
+  }));
+
+export type InsertAttendance = z.infer<typeof insertAttendanceSchema>;
+export type Attendance = typeof attendance.$inferSelect;

@@ -4,8 +4,8 @@ import { AppSidebar } from "./AppSidebar";
 import { Dashboard } from "./Dashboard";
 import { ThemeToggle } from "./ThemeToggle";
 import { Button } from "@/components/ui/button";
-import { School, Plus, Edit, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { School, Plus, Edit, Trash2, UserCheck } from "lucide-react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const TeacherAssignments = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -155,29 +156,338 @@ const TeacherAssignments = () => {
   );
 };
 
-const TeacherAttendance = () => (
-  <div className="p-6">
-    <h1 className="text-3xl font-bold mb-4">Attendance Management</h1>
-    <p className="text-muted-foreground mb-6">Mark and view student attendance for your classes.</p>
-    <div className="bg-card p-4 rounded-lg border">
-      <h3 className="font-semibold mb-4">Today's Attendance - Mathematics (Grade 10)</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div className="flex items-center justify-between p-2 border rounded">
-          <span>John Smith</span>
-          <span className="text-green-600">Present</span>
-        </div>
-        <div className="flex items-center justify-between p-2 border rounded">
-          <span>Emma Davis</span>
-          <span className="text-green-600">Present</span>
-        </div>
-        <div className="flex items-center justify-between p-2 border rounded">
-          <span>Michael Johnson</span>
-          <span className="text-red-600">Absent</span>
+const TeacherAttendance = () => {
+  const [students, setStudents] = useState<any[]>([]);
+  const [attendance, setAttendance] = useState<{[key: string]: 'present' | 'absent'}>({});
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedClass, setSelectedClass] = useState<string | null>(null);
+  const [selectedSection, setSelectedSection] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Get query parameters
+  const urlParams = new URLSearchParams(window.location.search);
+  const classParam = urlParams.get('class');
+  const sectionParam = urlParams.get('section');
+
+  useEffect(() => {
+    console.log('TeacherAttendance useEffect:', { classParam, sectionParam });
+    if (classParam && sectionParam) {
+      setSelectedClass(classParam);
+      setSelectedSection(sectionParam);
+      fetchStudents(classParam, sectionParam);
+    }
+  }, [classParam, sectionParam]);
+
+  const fetchStudents = async (classGrade: string, section: string) => {
+    console.log('Fetching students for:', classGrade, section);
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/students/class/${classGrade}/${section}`);
+      console.log('Fetch response status:', response.status);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Fetched students:', data);
+        setStudents(data);
+        // Initialize attendance state and fetch existing attendance
+        await initializeAttendanceForDate(data, selectedDate);
+      } else {
+        console.error('Failed to fetch students:', response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error('Error fetching students:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const initializeAttendanceForDate = async (studentData: any[], date: string) => {
+    // Initialize all students as present by default
+    const initialAttendance: {[key: string]: 'present' | 'absent'} = {};
+    studentData.forEach((student: any) => {
+      initialAttendance[student.id] = 'present';
+    });
+
+    // Fetch existing attendance for this date
+    try {
+      const response = await fetch(`/api/attendance/class/${selectedClass}/${selectedSection}?date=${date}`);
+      if (response.ok) {
+        const existingAttendance = await response.json();
+        console.log('Fetched existing attendance:', existingAttendance);
+
+        // Update attendance state with existing data
+        existingAttendance.forEach((record: any) => {
+          initialAttendance[record.studentId] = record.status;
+        });
+      } else {
+        console.log('No existing attendance found for this date, using defaults');
+      }
+    } catch (error) {
+      console.error('Error fetching existing attendance:', error);
+    }
+
+    setAttendance(initialAttendance);
+  };
+
+  const handleAttendanceChange = (studentId: string, status: 'present' | 'absent') => {
+    setAttendance(prev => ({
+      ...prev,
+      [studentId]: status
+    }));
+  };
+
+  const handleSaveAttendance = async () => {
+    if (!selectedClass || !selectedSection) return;
+
+    setSaving(true);
+    try {
+      // Get current user from localStorage with proper validation
+      let currentUserData = localStorage.getItem('eduManage_currentUser');
+      let currentUser;
+
+      if (!currentUserData) {
+        // For testing purposes, create a mock teacher user in database
+        try {
+          const teacherData = {
+            role: 'teacher' as const,
+            firstName: 'John',
+            lastName: 'Doe',
+            email: `teacher_${Date.now()}@example.com`, // Make email unique
+            password: 'password123',
+            phone: null,
+            employeeId: `T${Date.now()}`, // Make employeeId unique
+            studentId: null,
+            parentRelation: null,
+            department: 'Mathematics',
+            class: null,
+            section: null
+          };
+
+          console.log('Creating mock teacher user:', teacherData);
+
+          const createResponse = await fetch('/api/auth/signup', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(teacherData),
+          });
+
+          if (createResponse.ok) {
+            const createdUser = await createResponse.json();
+            localStorage.setItem('eduManage_currentUser', JSON.stringify(createdUser));
+            currentUser = createdUser;
+            console.log('Mock teacher user created successfully:', createdUser);
+          } else {
+            const errorData = await createResponse.json().catch(() => ({}));
+            console.error('Failed to create teacher user:', errorData);
+
+            // Try to find existing teacher user instead
+            console.log('Attempting to find existing teacher user...');
+            const signinResponse = await fetch('/api/auth/signin', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                email: 'teacher@example.com',
+                password: 'password123'
+              }),
+            });
+
+            if (signinResponse.ok) {
+              const existingUser = await signinResponse.json();
+              localStorage.setItem('eduManage_currentUser', JSON.stringify(existingUser));
+              currentUser = existingUser;
+              console.log('Found existing teacher user:', existingUser);
+            } else {
+              alert(`Failed to create or find teacher user: ${errorData.message || 'Unknown error'}. Please try logging in properly.`);
+              setSaving(false);
+              return;
+            }
+          }
+        } catch (error) {
+          console.error('Error creating/finding teacher user:', error);
+          alert('Error setting up teacher user. Please check your connection and try again.');
+          setSaving(false);
+          return;
+        }
+      } else {
+        try {
+          currentUser = JSON.parse(currentUserData);
+        } catch (error) {
+          console.error('Error parsing current user data:', error);
+          localStorage.removeItem('eduManage_currentUser'); // Clear corrupted data
+          alert('User session corrupted. Please refresh the page and try again.');
+          setSaving(false);
+          return;
+        }
+      }
+
+      if (!currentUser || !currentUser.id) {
+        alert('User ID not found. Please refresh the page and try again.');
+        setSaving(false);
+        return;
+      }
+
+      console.log('Using teacher user for attendance:', currentUser);
+
+      // Verify the user still exists in the database
+      try {
+        const verifyResponse = await fetch(`/api/auth/verify/${currentUser.id}`);
+        if (!verifyResponse.ok) {
+          console.warn('User not found in database, clearing localStorage');
+          localStorage.removeItem('eduManage_currentUser');
+
+          // Try to sign in with default teacher credentials
+          const signinResponse = await fetch('/api/auth/signin', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: 'teacher@example.com',
+              password: 'password123'
+            }),
+          });
+
+          if (signinResponse.ok) {
+            const existingUser = await signinResponse.json();
+            localStorage.setItem('eduManage_currentUser', JSON.stringify(existingUser));
+            currentUser = existingUser;
+            console.log('Re-authenticated with existing teacher user:', existingUser);
+          } else {
+            alert('User session expired. Please refresh the page and try again.');
+            setSaving(false);
+            return;
+          }
+        }
+      } catch (error) {
+        console.warn('Could not verify user, proceeding anyway:', error);
+      }
+
+      const attendanceData = students.map(student => ({
+        studentId: student.id,
+        date: selectedDate,
+        status: attendance[student.id] || 'present',
+        markedBy: currentUser.id,
+        subject: 'General', // Could be made configurable
+        class: selectedClass,
+        section: selectedSection
+      }));
+
+      const response = await fetch('/api/attendance/mark', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(attendanceData),
+      });
+
+      if (response.ok) {
+        alert('Attendance saved successfully!');
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        alert(`Error saving attendance: ${errorData.message || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error saving attendance:', error);
+      alert('Error saving attendance. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDateChange = async (date: string) => {
+    setSelectedDate(date);
+    // Fetch existing attendance for this date
+    if (selectedClass && selectedSection && students.length > 0) {
+      await initializeAttendanceForDate(students, date);
+    }
+  };
+
+  return (
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-3xl font-bold">Attendance Management</h1>
+          <p className="text-muted-foreground">Mark and view student attendance for your classes.</p>
         </div>
       </div>
+
+      {selectedClass && selectedSection ? (
+        <div className="space-y-6">
+          <div className="bg-card p-4 rounded-lg border">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold">Mark Attendance - Class {selectedClass}-{selectedSection}</h3>
+              <div className="flex gap-4">
+                <Input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => handleDateChange(e.target.value)}
+                  className="w-40"
+                />
+                <Button onClick={handleSaveAttendance} disabled={saving}>
+                  {saving ? 'Saving...' : 'Save Attendance'}
+                </Button>
+              </div>
+            </div>
+
+            {loading ? (
+              <div>Loading students...</div>
+            ) : students.length === 0 ? (
+              <div>No students found for this class. Try refreshing or check if the class/section exists.</div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {students.map((student) => (
+                  <div key={student.id} className="flex items-center justify-between p-3 border rounded">
+                    <div>
+                      <span className="font-medium">{student.firstName} {student.lastName}</span>
+                      <span className="text-sm text-muted-foreground ml-2">({student.studentId})</span>
+                    </div>
+                      <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="radio"
+                            id={`present-${student.id}`}
+                            name={`attendance-${student.id}`}
+                            checked={attendance[student.id] === 'present'}
+                            onChange={() => handleAttendanceChange(student.id, 'present')}
+                            className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 focus:ring-green-500"
+                          />
+                          <Label htmlFor={`present-${student.id}`} className="text-sm text-green-600">
+                            Present
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="radio"
+                            id={`absent-${student.id}`}
+                            name={`attendance-${student.id}`}
+                            checked={attendance[student.id] === 'absent'}
+                            onChange={() => handleAttendanceChange(student.id, 'absent')}
+                            className="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 focus:ring-red-500"
+                          />
+                          <Label htmlFor={`absent-${student.id}`} className="text-sm text-red-600">
+                            Absent
+                          </Label>
+                        </div>
+                      </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="bg-card p-4 rounded-lg border">
+          <h3 className="font-semibold mb-4">Select a Class to Mark Attendance</h3>
+          <p className="text-muted-foreground">Go to the Classes page and click "Mark Attendance" on any class.</p>
+        </div>
+      )}
     </div>
-  </div>
-);
+  );
+};
 
 const TeacherExams = () => (
   <div className="p-6">
@@ -206,58 +516,62 @@ const TeacherExams = () => (
   </div>
 );
 
-const TeacherClasses = () => (
-  <div className="p-6">
-    <h1 className="text-3xl font-bold mb-4">My Classes</h1>
-    <p className="text-muted-foreground mb-6">Manage your assigned classes and students.</p>
-    <div className="space-y-4">
-      <div className="bg-card p-4 rounded-lg border">
-        <h3 className="font-semibold">Class 10-A Mathematics</h3>
-        <p className="text-sm text-muted-foreground">Grade 10, Section A</p>
-        <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">45</div>
-            <div className="text-sm text-muted-foreground">Students</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">42</div>
-            <div className="text-sm text-muted-foreground">Present Today</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-orange-600">3</div>
-            <div className="text-sm text-muted-foreground">Assignments Due</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-purple-600">88%</div>
-            <div className="text-sm text-muted-foreground">Avg. Attendance</div>
-          </div>
+const TeacherClasses = () => {
+  const [classes, setClasses] = useState([
+    { id: 1, name: "Class 10-A Mathematics", grade: "10", section: "A", students: 45, presentToday: 42, assignmentsDue: 3, avgAttendance: 88 },
+    { id: 2, name: "Class 9-B Mathematics", grade: "9", section: "B", students: 38, presentToday: 35, assignmentsDue: 2, avgAttendance: 92 },
+  ]);
+
+  const handleMarkAttendance = (classItem: any) => {
+    // Navigate to attendance marking for this class
+    window.location.href = `/teacher/attendance?class=${classItem.grade}&section=${classItem.section}`;
+  };
+
+  return (
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-3xl font-bold">My Classes</h1>
+          <p className="text-muted-foreground">Manage your assigned classes and students.</p>
         </div>
       </div>
-      <div className="bg-card p-4 rounded-lg border">
-        <h3 className="font-semibold">Class 9-B Mathematics</h3>
-        <p className="text-sm text-muted-foreground">Grade 9, Section B</p>
-        <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">38</div>
-            <div className="text-sm text-muted-foreground">Students</div>
+      <div className="space-y-4">
+        {classes.map((classItem) => (
+          <div key={classItem.id} className="bg-card p-4 rounded-lg border">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h3 className="font-semibold">{classItem.name}</h3>
+                <p className="text-sm text-muted-foreground">Grade {classItem.grade}, Section {classItem.section}</p>
+              </div>
+              <Button onClick={() => handleMarkAttendance(classItem)} className="bg-primary hover:bg-primary/90">
+                <UserCheck className="h-4 w-4 mr-2" />
+                Mark Attendance
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">{classItem.students}</div>
+                <div className="text-sm text-muted-foreground">Students</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">{classItem.presentToday}</div>
+                <div className="text-sm text-muted-foreground">Present Today</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-orange-600">{classItem.assignmentsDue}</div>
+                <div className="text-sm text-muted-foreground">Assignments Due</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-purple-600">{classItem.avgAttendance}%</div>
+                <div className="text-sm text-muted-foreground">Avg. Attendance</div>
+              </div>
+            </div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">35</div>
-            <div className="text-sm text-muted-foreground">Present Today</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-orange-600">2</div>
-            <div className="text-sm text-muted-foreground">Assignments Due</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-purple-600">92%</div>
-            <div className="text-sm text-muted-foreground">Avg. Attendance</div>
-          </div>
-        </div>
+        ))}
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const TeacherGrades = () => (
   <div className="p-6">
