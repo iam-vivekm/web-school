@@ -1,49 +1,69 @@
 # Implementation Plan
 
 ## Overview
-Modify the teacher attendance marking interface to use checkboxes instead of dropdown selectors for present/absent status. This will make individual student attendance marking more intuitive and visually clear, allowing teachers to quickly toggle attendance status for each student in the class list.
+Implement comprehensive CRUD (Create, Read, Update, Delete) operations for all record types in the EduManagePro system. Currently, the application only supports creating users and attendance records, with read operations for viewing data. This implementation will add delete and update functionality across all entities including users (students, teachers, parents, admins), attendance records, and enable proper data management through the admin and teacher portals.
 
 ## Types
-No type system changes required. The existing attendance schema and types already support individual student attendance marking.
+No new type definitions required. The existing schema types (User, Attendance, InsertUser, InsertAttendance) already support all necessary fields for CRUD operations.
 
 ## Files
+### New Files
+- EduManagePro/EduManagePro/server/middleware.ts - Authentication middleware for admin-only operations
+
 ### Modified Files
-- EduManagePro/EduManagePro/client/src/components/TeacherPortal.tsx - Update TeacherAttendance component to use checkboxes instead of dropdown selectors for attendance marking
+- EduManagePro/EduManagePro/server/storage.ts - Add delete and update methods to IStorage interface and DatabaseStorage class
+- EduManagePro/EduManagePro/server/routes.ts - Add DELETE and PUT endpoints for users and attendance records
+- EduManagePro/EduManagePro/client/src/components/AdminPortal.tsx - Add onClick handlers for Edit and Delete buttons in all admin tables
+- EduManagePro/EduManagePro/client/src/components/TeacherPortal.tsx - Add onClick handlers for Edit and Delete buttons in teacher tables
 
 ### Configuration Files
 No configuration changes required.
 
 ## Functions
+### New Functions
+- deleteUser(id: string): Promise<void> - Remove user from database
+- updateUser(id: string, user: Partial<InsertUser>): Promise<User> - Update user information
+- deleteAttendance(id: string): Promise<void> - Remove attendance record
+- updateAttendance(id: string, attendance: Partial<InsertAttendance>): Promise<Attendance> - Update attendance record
+- requireAdmin middleware function - Ensure only admin users can perform destructive operations
+
 ### Modified Functions
-- handleAttendanceChange in TeacherAttendance component - Update to handle checkbox toggle logic instead of dropdown value changes
+- AdminStudents, AdminTeachers, AdminParents components - Add handleDelete and handleEdit functions
+- TeacherAssignments component - Add handleDelete and handleEdit functions
 
 ## Classes
 ### Modified Components
-- TeacherAttendance: Replace Select dropdown components with Checkbox components for each student, maintaining the same grid layout but with clearer individual marking controls
+- AdminPortal components (AdminStudents, AdminTeachers, AdminParents, AdminClasses, AdminFees, AdminExams, AdminNotices) - Add state management for edit modals and delete confirmations
+- TeacherPortal components (TeacherAssignments) - Add state management for edit modals and delete confirmations
 
 ## Dependencies
-No new dependencies required. The existing Checkbox component from the UI library is already available.
+No new dependencies required. All necessary UI components (Dialog, AlertDialog, Button) are already available in the existing component library.
 
 ## Testing
 ### Unit Tests
-- Test checkbox toggle functionality
-- Test attendance state management with checkboxes
-- Verify attendance data submission works correctly
+- Test deleteUser and updateUser storage methods
+- Test deleteAttendance and updateAttendance storage methods
+- Test authentication middleware for admin-only operations
+- Test API endpoints for proper error handling and validation
 
 ### Integration Tests
-- Test teacher attendance marking flow with checkboxes
-- Verify attendance saves correctly to database
-- Test checkbox state persistence during form interaction
+- Test complete CRUD workflows through the UI
+- Test admin permission enforcement
+- Test data consistency after updates and deletes
+- Test cascade delete scenarios (e.g., deleting user with attendance records)
 
 ### Manual Testing
-- Verify checkboxes work correctly for marking present/absent
-- Test bulk attendance saving functionality
-- Ensure UI is responsive and accessible
-- Verify no regression in existing attendance features
+- Verify delete operations show confirmation dialogs
+- Test edit functionality updates records correctly
+- Ensure admin-only operations are properly restricted
+- Test error handling for invalid operations
+- Verify UI updates after successful operations
 
 ## Implementation Order
-1. Update TeacherAttendance component to import Checkbox component
-2. Replace Select dropdowns with Checkbox components in the student grid
-3. Update handleAttendanceChange function to handle checkbox toggle logic
-4. Test the updated interface functionality
-5. Verify attendance saving still works correctly
+1. Add delete and update methods to storage interface and implementation
+2. Create authentication middleware for admin operations
+3. Add DELETE and PUT API routes with proper validation
+4. Update AdminPortal components with delete and edit functionality
+5. Update TeacherPortal components with delete and edit functionality
+6. Test all CRUD operations end-to-end
+7. Add proper error handling and user feedback
