@@ -1,7 +1,40 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema, insertAttendanceSchema } from "@shared/schema";
+import { insertUserSchema, insertAttendanceSchema, users, attendance } from "@shared/schema";
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
+import { requireAdmin, requireTeacher } from "./middleware";
+
+// Create partial schemas for updates
+const updateUserSchema = createInsertSchema(users)
+  .pick({
+    role: true,
+    firstName: true,
+    lastName: true,
+    email: true,
+    phone: true,
+    password: true,
+    employeeId: true,
+    studentId: true,
+    parentRelation: true,
+    department: true,
+    class: true,
+    section: true,
+  })
+  .partial();
+
+const updateAttendanceSchema = createInsertSchema(attendance)
+  .pick({
+    studentId: true,
+    date: true,
+    status: true,
+    markedBy: true,
+    subject: true,
+    class: true,
+    section: true,
+  })
+  .partial();
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // put application routes here
@@ -296,6 +329,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Get class attendance error:", error);
       res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // User CRUD routes
+  // GET /api/users - Get users with optional role filter
+  app.get("/api/users", requireAdmin, async (req, res) => {
+    try {
+      const { role } = req.query;
+      let users;
+
+      if (role && typeof role === 'string') {
+        // Filter users by role
+        const allUsers = await storage.getAllUsers();
+        users = allUsers.filter(user => user.role === role);
+      } else {
+        users = await storage.getAllUsers();
+      }
+
+      // Don't send passwords back to client
+      const usersWithoutPasswords = users.map(user => {
+        const { password, ...userWithoutPassword } = user;
+        return userWithoutPassword;
+      });
+
+      res.json(usersWithoutPasswords);
+    } catch (error) {
+      console.error("Get users error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // PUT /api/users/:id - Update user
+  app.put("/api/users/:id", requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userData = req.body;
+
+      // Validate the update data (partial schema)
+      const validatedData = updateUserSchema.parse(userData);
+
+      const updatedUser = await storage.updateUser(id, validatedData);
+
+      // Don't send password back to client
+      const { password, ...userWithoutPassword } = updatedUser;
+      res.json(userWithoutPassword);
+    } catch (error: any) {
+      console.error("Update user error:", error);
+      if (error.message === "User not found") {
+        res.status(404).json({ message: "User not found" });
+      } else {
+        res.status(400).json({ message: "Invalid user data: " + error.message });
+      }
+    }
+  });
+
+  // DELETE /api/users/:id - Delete user
+  app.delete("/api/users/:id", requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      await storage.deleteUser(id);
+      res.status(204).send();
+    } catch (error: any) {
+      console.error("Delete user error:", error);
+      if (error.message === "User not found") {
+        res.status(404).json({ message: "User not found" });
+      } else {
+        res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  });
+
+  // Attendance CRUD routes
+  // PUT /api/attendance/:id - Update attendance record
+  app.put("/api/attendance/:id", requireTeacher, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const attendanceData = req.body;
+
+      // Validate the update data (partial schema)
+      const validatedData = updateAttendanceSchema.parse(attendanceData);
+
+      const updatedAttendance = await storage.updateAttendance(id, validatedData);
+      res.json(updatedAttendance);
+    } catch (error: any) {
+      console.error("Update attendance error:", error);
+      if (error.message === "Attendance record not found") {
+        res.status(404).json({ message: "Attendance record not found" });
+      } else {
+        res.status(400).json({ message: "Invalid attendance data: " + error.message });
+      }
+    }
+  });
+
+  // DELETE /api/attendance/:id - Delete attendance record
+  app.delete("/api/attendance/:id", requireTeacher, async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      await storage.deleteAttendance(id);
+      res.status(204).send();
+    } catch (error: any) {
+      console.error("Delete attendance error:", error);
+      if (error.message === "Attendance record not found") {
+        res.status(404).json({ message: "Attendance record not found" });
+      } else {
+        res.status(500).json({ message: "Internal server error" });
+      }
     }
   });
 

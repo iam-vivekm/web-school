@@ -5,7 +5,7 @@ import { Dashboard } from "./Dashboard";
 import { ThemeToggle } from "./ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { School, Plus, Edit, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -14,6 +14,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   Table,
   TableBody,
@@ -26,16 +37,156 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+
+interface Student {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  studentId?: string;
+  class?: string;
+  section?: string;
+  role: string;
+  createdAt?: string;
+}
+
+interface UpdateStudentData {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  class?: string;
+  section?: string;
+}
 
 const AdminStudents = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [students] = useState([
-    { id: 1, name: "Aarav Sharma", rollNo: "101", class: "10-A", email: "aarav.sharma@email.com", phone: "+91-9876543210", status: "Active" },
-    { id: 2, name: "Priya Patel", rollNo: "102", class: "10-A", email: "priya.patel@email.com", phone: "+91-9876543211", status: "Active" },
-    { id: 3, name: "Rohan Kumar", rollNo: "103", class: "9-B", email: "rohan.kumar@email.com", phone: "+91-9876543212", status: "Active" },
-    { id: 4, name: "Ananya Singh", rollNo: "104", class: "11-A", email: "ananya.singh@email.com", phone: "+91-9876543213", status: "Active" },
-    { id: 5, name: "Vikram Jain", rollNo: "105", class: "10-B", email: "vikram.jain@email.com", phone: "+91-9876543214", status: "Inactive" },
-  ]);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  // Fetch students from API
+  useEffect(() => {
+    fetchStudents();
+  }, []);
+
+  const fetchStudents = async () => {
+    try {
+      setLoading(true);
+      const currentUser = JSON.parse(localStorage.getItem('eduManage_currentUser') || '{}');
+      const response = await fetch('/api/users?role=student', {
+        headers: {
+          'x-user-id': currentUser.id,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setStudents(data);
+      } else {
+        const error = await response.json().catch(() => ({ message: "Failed to fetch students" }));
+        toast({
+          title: "Error",
+          description: error.message || "Failed to fetch students",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching students:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch students",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEdit = (student: Student) => {
+    setEditingStudent(student);
+    setIsEditModalOpen(true);
+  };
+
+  const handleDelete = async (studentId: string) => {
+    try {
+      const currentUser = JSON.parse(localStorage.getItem('eduManage_currentUser') || '{}');
+      const response = await fetch(`/api/users/${studentId}`, {
+        method: 'DELETE',
+        headers: {
+          'x-user-id': currentUser.id,
+        },
+      });
+
+      if (response.ok) {
+        setStudents(students.filter(student => student.id !== studentId));
+        toast({
+          title: "Success",
+          description: "Student deleted successfully",
+        });
+      } else {
+        const error = await response.json();
+        toast({
+          title: "Error",
+          description: error.message || "Failed to delete student",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting student:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete student",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUpdateStudent = async (formData: UpdateStudentData) => {
+    if (!editingStudent) return;
+
+    try {
+      const currentUser = JSON.parse(localStorage.getItem('eduManage_currentUser') || '{}');
+      const response = await fetch(`/api/users/${editingStudent.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': currentUser.id,
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        const updatedStudent = await response.json();
+        setStudents(students.map(student =>
+          student.id === editingStudent.id ? updatedStudent : student
+        ));
+        setIsEditModalOpen(false);
+        setEditingStudent(null);
+        toast({
+          title: "Success",
+          description: "Student updated successfully",
+        });
+      } else {
+        const error = await response.json();
+        toast({
+          title: "Error",
+          description: error.message || "Failed to update student",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error updating student:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update student",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="p-6">
@@ -98,7 +249,115 @@ const AdminStudents = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+
       </div>
+
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Edit Student</DialogTitle>
+            <DialogDescription>
+              Update the student's information.
+            </DialogDescription>
+          </DialogHeader>
+          {editingStudent && (
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.target as HTMLFormElement);
+              const updateData: UpdateStudentData = {
+                firstName: (e.target as HTMLFormElement).firstName.value,
+                lastName: (e.target as HTMLFormElement).lastName.value,
+                email: (e.target as HTMLFormElement).email.value,
+                phone: (e.target as HTMLFormElement).phone.value,
+                class: (e.target as HTMLFormElement).class.value,
+                section: (e.target as HTMLFormElement).section.value,
+              };
+              handleUpdateStudent(updateData);
+            }}>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="firstName" className="text-right">First Name</Label>
+                  <Input
+                    id="firstName"
+                    name="firstName"
+                    defaultValue={editingStudent.firstName}
+                    className="col-span-3"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="lastName" className="text-right">Last Name</Label>
+                  <Input
+                    id="lastName"
+                    name="lastName"
+                    defaultValue={editingStudent.lastName}
+                    className="col-span-3"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="email" className="text-right">Email</Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    defaultValue={editingStudent.email}
+                    className="col-span-3"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="phone" className="text-right">Phone</Label>
+                  <Input
+                    id="phone"
+                    name="phone"
+                    defaultValue={editingStudent.phone || ''}
+                    className="col-span-3"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="class" className="text-right">Class</Label>
+                  <Select name="class" defaultValue={editingStudent.class || ''}>
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Select class" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="9">Grade 9</SelectItem>
+                      <SelectItem value="10">Grade 10</SelectItem>
+                      <SelectItem value="11">Grade 11</SelectItem>
+                      <SelectItem value="12">Grade 12</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="section" className="text-right">Section</Label>
+                  <Select name="section" defaultValue={editingStudent.section || ''}>
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Select section" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="A">Section A</SelectItem>
+                      <SelectItem value="B">Section B</SelectItem>
+                      <SelectItem value="C">Section C</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsEditModalOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit">Update Student</Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <div className="bg-card rounded-lg border">
         <Table>
@@ -114,34 +373,72 @@ const AdminStudents = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {students.map((student) => (
-              <TableRow key={student.id}>
-                <TableCell className="font-medium">{student.name}</TableCell>
-                <TableCell>{student.rollNo}</TableCell>
-                <TableCell>{student.class}</TableCell>
-                <TableCell>{student.email}</TableCell>
-                <TableCell>{student.phone}</TableCell>
-                <TableCell>
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    student.status === 'Active'
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                      : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                  }`}>
-                    {student.status}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-4">
+                  Loading students...
                 </TableCell>
               </TableRow>
-            ))}
+            ) : students.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-4">
+                  No students found
+                </TableCell>
+              </TableRow>
+            ) : (
+              students.map((student) => (
+                <TableRow key={student.id}>
+                  <TableCell className="font-medium">
+                    {student.firstName} {student.lastName}
+                  </TableCell>
+                  <TableCell>{student.studentId || 'N/A'}</TableCell>
+                  <TableCell>{student.class || 'N/A'}</TableCell>
+                  <TableCell>{student.email}</TableCell>
+                  <TableCell>{student.phone || 'N/A'}</TableCell>
+                  <TableCell>
+                    <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                      Active
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEdit(student)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Student</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete {student.firstName} {student.lastName}?
+                              This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDelete(student.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>
@@ -149,15 +446,152 @@ const AdminStudents = () => {
   );
 };
 
+interface Teacher {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  employeeId?: string;
+  department?: string;
+  role: string;
+  createdAt?: string;
+}
+
+interface UpdateTeacherData {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  department?: string;
+}
+
 const AdminTeachers = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [teachers] = useState([
-    { id: 1, name: "Dr. Priya Sharma", subject: "Mathematics", email: "priya.sharma@school.edu", phone: "+91-9876543201", status: "Active" },
-    { id: 2, name: "Prof. Amit Singh", subject: "Physics", email: "amit.singh@school.edu", phone: "+91-9876543202", status: "Active" },
-    { id: 3, name: "Ms. Kavita Rao", subject: "English", email: "kavita.rao@school.edu", phone: "+91-9876543203", status: "Active" },
-    { id: 4, name: "Mr. Rajesh Kumar", subject: "History", email: "rajesh.kumar@school.edu", phone: "+91-9876543204", status: "Active" },
-    { id: 5, name: "Dr. Anjali Gupta", subject: "Biology", email: "anjali.gupta@school.edu", phone: "+91-9876543205", status: "On Leave" },
-  ]);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  // Fetch teachers from API
+  useEffect(() => {
+    fetchTeachers();
+  }, []);
+
+  const fetchTeachers = async () => {
+    try {
+      setLoading(true);
+      const currentUser = JSON.parse(localStorage.getItem('eduManage_currentUser') || '{}');
+      const response = await fetch('/api/users?role=teacher', {
+        headers: {
+          'x-user-id': currentUser.id,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setTeachers(data);
+      } else {
+        const error = await response.json().catch(() => ({ message: "Failed to fetch teachers" }));
+        toast({
+          title: "Error",
+          description: error.message || "Failed to fetch teachers",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching teachers:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch teachers",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEdit = (teacher: Teacher) => {
+    setEditingTeacher(teacher);
+    setIsEditModalOpen(true);
+  };
+
+  const handleDelete = async (teacherId: string) => {
+    try {
+      const currentUser = JSON.parse(localStorage.getItem('eduManage_currentUser') || '{}');
+      const response = await fetch(`/api/users/${teacherId}`, {
+        method: 'DELETE',
+        headers: {
+          'x-user-id': currentUser.id,
+        },
+      });
+
+      if (response.ok) {
+        setTeachers(teachers.filter(teacher => teacher.id !== teacherId));
+        toast({
+          title: "Success",
+          description: "Teacher deleted successfully",
+        });
+      } else {
+        const error = await response.json();
+        toast({
+          title: "Error",
+          description: error.message || "Failed to delete teacher",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting teacher:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete teacher",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUpdateTeacher = async (formData: UpdateTeacherData) => {
+    if (!editingTeacher) return;
+
+    try {
+      const currentUser = JSON.parse(localStorage.getItem('eduManage_currentUser') || '{}');
+      const response = await fetch(`/api/users/${editingTeacher.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': currentUser.id,
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        const updatedTeacher = await response.json();
+        setTeachers(teachers.map(teacher =>
+          teacher.id === editingTeacher.id ? updatedTeacher : teacher
+        ));
+        setIsEditModalOpen(false);
+        setEditingTeacher(null);
+        toast({
+          title: "Success",
+          description: "Teacher updated successfully",
+        });
+      } else {
+        const error = await response.json();
+        toast({
+          title: "Error",
+          description: error.message || "Failed to update teacher",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error updating teacher:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update teacher",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="p-6">
@@ -216,6 +650,102 @@ const AdminTeachers = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Edit Teacher</DialogTitle>
+              <DialogDescription>
+                Update the teacher's information.
+              </DialogDescription>
+            </DialogHeader>
+            {editingTeacher && (
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target as HTMLFormElement);
+                const updateData: UpdateTeacherData = {
+                  firstName: (e.target as HTMLFormElement).firstName.value,
+                  lastName: (e.target as HTMLFormElement).lastName.value,
+                  email: (e.target as HTMLFormElement).email.value,
+                  phone: (e.target as HTMLFormElement).phone.value,
+                  department: (e.target as HTMLFormElement).department.value,
+                };
+                handleUpdateTeacher(updateData);
+              }}>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="firstName" className="text-right">First Name</Label>
+                    <Input
+                      id="firstName"
+                      name="firstName"
+                      defaultValue={editingTeacher.firstName}
+                      className="col-span-3"
+                      required
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="lastName" className="text-right">Last Name</Label>
+                    <Input
+                      id="lastName"
+                      name="lastName"
+                      defaultValue={editingTeacher.lastName}
+                      className="col-span-3"
+                      required
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="email" className="text-right">Email</Label>
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      defaultValue={editingTeacher.email}
+                      className="col-span-3"
+                      required
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="phone" className="text-right">Phone</Label>
+                    <Input
+                      id="phone"
+                      name="phone"
+                      defaultValue={editingTeacher.phone || ''}
+                      className="col-span-3"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="department" className="text-right">Department</Label>
+                    <Select name="department" defaultValue={editingTeacher.department || ''}>
+                      <SelectTrigger className="col-span-3">
+                        <SelectValue placeholder="Select department" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="mathematics">Mathematics</SelectItem>
+                        <SelectItem value="physics">Physics</SelectItem>
+                        <SelectItem value="chemistry">Chemistry</SelectItem>
+                        <SelectItem value="english">English</SelectItem>
+                        <SelectItem value="history">History</SelectItem>
+                        <SelectItem value="biology">Biology</SelectItem>
+                        <SelectItem value="computer-science">Computer Science</SelectItem>
+                        <SelectItem value="physical-education">Physical Education</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsEditModalOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit">Update Teacher</Button>
+                </div>
+              </form>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="bg-card rounded-lg border">
@@ -231,33 +761,71 @@ const AdminTeachers = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {teachers.map((teacher) => (
-              <TableRow key={teacher.id}>
-                <TableCell className="font-medium">{teacher.name}</TableCell>
-                <TableCell>{teacher.subject}</TableCell>
-                <TableCell>{teacher.email}</TableCell>
-                <TableCell>{teacher.phone}</TableCell>
-                <TableCell>
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    teacher.status === 'Active'
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                      : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                  }`}>
-                    {teacher.status}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-4">
+                  Loading teachers...
                 </TableCell>
               </TableRow>
-            ))}
+            ) : teachers.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-4">
+                  No teachers found
+                </TableCell>
+              </TableRow>
+            ) : (
+              teachers.map((teacher) => (
+                <TableRow key={teacher.id}>
+                  <TableCell className="font-medium">
+                    {teacher.firstName} {teacher.lastName}
+                  </TableCell>
+                  <TableCell>{teacher.department || 'N/A'}</TableCell>
+                  <TableCell>{teacher.email}</TableCell>
+                  <TableCell>{teacher.phone || 'N/A'}</TableCell>
+                  <TableCell>
+                    <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                      Active
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEdit(teacher)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Teacher</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete {teacher.firstName} {teacher.lastName}?
+                              This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDelete(teacher.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>
@@ -909,6 +1477,19 @@ export function AdminPortal() {
   const userName = currentUser.firstName && currentUser.lastName
     ? `${currentUser.firstName} ${currentUser.lastName}`
     : 'Administrator';
+
+  // Check if user is admin
+  if (!currentUser.id || currentUser.role !== 'admin') {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
+          <p className="text-muted-foreground mb-4">You need administrator privileges to access this page.</p>
+          <Button onClick={() => navigate('/signin')}>Sign In as Admin</Button>
+        </div>
+      </div>
+    );
+  }
 
   const handleLogout = () => {
     localStorage.removeItem('eduManage_currentUser');

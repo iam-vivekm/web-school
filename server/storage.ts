@@ -9,12 +9,16 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: string, user: Partial<InsertUser>): Promise<User>;
+  deleteUser(id: string): Promise<void>;
   getAllUsers(): Promise<User[]>;
   getStudentsByClass(className: string, section: string): Promise<User[]>;
 
   // Attendance methods
   getAttendance(filters?: { date?: string; class?: string; studentId?: string; teacherId?: string }): Promise<Attendance[]>;
   markAttendance(attendanceData: InsertAttendance[]): Promise<Attendance[]>;
+  updateAttendance(id: string, attendance: Partial<InsertAttendance>): Promise<Attendance>;
+  deleteAttendance(id: string): Promise<void>;
   getAttendanceByStudent(studentId: string, startDate?: string, endDate?: string): Promise<Attendance[]>;
   getAttendanceByClass(className: string, section: string, date?: string): Promise<Attendance[]>;
   getClassesForTeacher(teacherId: string): Promise<{ class: string; section: string }[]>;
@@ -34,6 +38,31 @@ export class DatabaseStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const result = await db.insert(users).values(insertUser).returning();
     return result[0];
+  }
+
+  async updateUser(id: string, userData: Partial<InsertUser>): Promise<User> {
+    const result = await db
+      .update(users)
+      .set(userData)
+      .where(eq(users.id, id))
+      .returning();
+
+    if (result.length === 0) {
+      throw new Error("User not found");
+    }
+
+    return result[0];
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    const result = await db
+      .delete(users)
+      .where(eq(users.id, id))
+      .returning();
+
+    if (result.length === 0) {
+      throw new Error("User not found");
+    }
   }
 
   async getAllUsers(): Promise<User[]> {
@@ -113,6 +142,31 @@ export class DatabaseStorage implements IStorage {
     }
 
     return results;
+  }
+
+  async updateAttendance(id: string, attendanceData: Partial<InsertAttendance>): Promise<Attendance> {
+    const result = await db
+      .update(attendance)
+      .set(attendanceData)
+      .where(eq(attendance.id, id))
+      .returning();
+
+    if (result.length === 0) {
+      throw new Error("Attendance record not found");
+    }
+
+    return result[0];
+  }
+
+  async deleteAttendance(id: string): Promise<void> {
+    const result = await db
+      .delete(attendance)
+      .where(eq(attendance.id, id))
+      .returning();
+
+    if (result.length === 0) {
+      throw new Error("Attendance record not found");
+    }
   }
 
   async getAttendanceByStudent(studentId: string, startDate?: string, endDate?: string): Promise<Attendance[]> {
