@@ -117,9 +117,11 @@ export function Dashboard({ userRole, userName }: DashboardProps) {
       subtitle: 'Administrator Dashboard',
       stats: [
         { title: "Total Students", value: 1284, description: "Active enrolled students", icon: Users, trend: { value: 12, label: "from last month", isPositive: true } },
+        { title: "Fees Collected", value: "$432,500", description: "This semester", icon: DollarSign, trend: { value: 15, label: "from last semester", isPositive: true } },
+        { title: "Pending Fees", value: "$67,200", description: "Outstanding payments", icon: DollarSign, trend: { value: 8, label: "overdue", isPositive: false } },
         { title: "Teachers", value: 47, description: "Active faculty members", icon: GraduationCap, trend: { value: 2, label: "new this month", isPositive: true } },
         { title: "Classes Today", value: 28, description: "Scheduled for today", icon: Calendar },
-        { title: "Fee Collection", value: "$124,500", description: "This month", icon: DollarSign, trend: { value: 8, label: "from last month", isPositive: true } }
+        { title: "Attendance Rate", value: "92%", description: "Average this week", icon: TrendingUp, trend: { value: 3, label: "from last week", isPositive: true } }
       ]
     },
     teacher: {

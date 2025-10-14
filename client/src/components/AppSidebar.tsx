@@ -48,9 +48,14 @@ const menuItems = {
       title: "Management",
       items: [
         { title: "Students", url: "/admin/students", icon: Users },
+        { title: "All Students", url: "/admin/students/all-students", icon: Users },
         { title: "Teachers", url: "/admin/teachers", icon: GraduationCap },
         { title: "Parents", url: "/admin/parents", icon: Users },
         { title: "Classes", url: "/admin/classes", icon: School },
+        { title: "All Classes", url: "/admin/classes/all-classes", icon: School },
+        { title: "New Class", url: "/admin/classes/new-classes", icon: School },
+        { title: "Classes with Subjects", url: "/admin/subjects/classes-with-subjects", icon: BookOpen },
+        { title: "Assign Subjects", url: "/admin/subjects/assign-subjects", icon: BookOpen },
       ]
     },
     {

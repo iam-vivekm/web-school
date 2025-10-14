@@ -6,6 +6,11 @@ import { ThemeToggle } from "./ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { School, Plus, Edit, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
+import AllStudents from "../pages/Admin/Students/AllStudents";
+import AllClasses from "../pages/Admin/Classes/AllClasses";
+import NewClasses from "../pages/Admin/Classes/NewClasses";
+import ClassesWithSubjects from "../pages/Admin/Subjects/ClassesWithSubjects";
+import AssignSubjects from "../pages/Admin/Subjects/AssignSubjects";
 import {
   Dialog,
   DialogContent,
@@ -1501,12 +1506,20 @@ export function AdminPortal() {
       case 'dashboard':
         return <Dashboard userRole="admin" userName={userName} />;
       case 'students':
+        if (pathParts[2] === 'all-students') {
+          return <AllStudents />;
+        }
         return <AdminStudents />;
       case 'teachers':
         return <AdminTeachers />;
       case 'parents':
         return <AdminParents />;
       case 'classes':
+        if (pathParts[2] === 'all-classes') {
+          return <AllClasses />;
+        } else if (pathParts[2] === 'new-classes') {
+          return <NewClasses />;
+        }
         return <AdminClasses />;
       case 'fees':
         return <AdminFees />;
@@ -1516,6 +1529,18 @@ export function AdminPortal() {
         return <AdminNotices />;
       case 'analytics':
         return <AdminAnalytics />;
+      case 'subjects':
+        if (pathParts[2] === 'classes-with-subjects') {
+          return <ClassesWithSubjects />;
+        } else if (pathParts[2] === 'assign-subjects') {
+          return <AssignSubjects />;
+        }
+        return (
+          <div className="p-6">
+            <h1 className="text-3xl font-bold mb-4">Subjects Management</h1>
+            <p className="text-muted-foreground">Subject assignment and management.</p>
+          </div>
+        );
       default:
         return (
           <div className="p-6">
