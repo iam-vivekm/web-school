@@ -1,4 +1,4 @@
-import { type User, type InsertUser, users, type Attendance, type InsertAttendance, attendance } from "@shared/schema";
+import { type User, type InsertUser, users, type Attendance, type InsertAttendance, attendance, type Institute, type InsertInstitute, institutes } from "../shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte } from "drizzle-orm";
 
@@ -22,6 +22,14 @@ export interface IStorage {
   getAttendanceByStudent(studentId: string, startDate?: string, endDate?: string): Promise<Attendance[]>;
   getAttendanceByClass(className: string, section: string, date?: string): Promise<Attendance[]>;
   getClassesForTeacher(teacherId: string): Promise<{ class: string; section: string }[]>;
+
+  // Institute methods
+  getInstitute(id: string): Promise<Institute | undefined>;
+  getCurrentInstitute(): Promise<Institute | undefined>;
+  createInstitute(institute: InsertInstitute): Promise<Institute>;
+  updateInstitute(id: string, institute: Partial<InsertInstitute>): Promise<Institute>;
+  deleteInstitute(id: string): Promise<void>;
+  createInstituteWithDemoData(): Promise<Institute>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -197,6 +205,73 @@ export class DatabaseStorage implements IStorage {
       .where(eq(attendance.markedBy, teacherId));
 
     return result;
+  }
+
+  // Institute methods
+  async getInstitute(id: string): Promise<Institute | undefined> {
+    const result = await db.select().from(institutes).where(eq(institutes.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getCurrentInstitute(): Promise<Institute | undefined> {
+    // For simplicity, return the first institute. In a multi-tenant system, you'd use context/user session
+    const result = await db.select().from(institutes).limit(1);
+    return result[0];
+  }
+
+  async createInstitute(institute: InsertInstitute): Promise<Institute> {
+    const result = await db.insert(institutes).values(institute).returning();
+    return result[0];
+  }
+
+  async updateInstitute(id: string, instituteData: Partial<InsertInstitute>): Promise<Institute> {
+    const result = await db
+      .update(institutes)
+      .set(instituteData)
+      .where(eq(institutes.id, id))
+      .returning();
+
+    if (result.length === 0) {
+      throw new Error("Institute not found");
+    }
+
+    return result[0];
+  }
+
+  async deleteInstitute(id: string): Promise<void> {
+    const result = await db
+      .delete(institutes)
+      .where(eq(institutes.id, id))
+      .returning();
+
+    if (result.length === 0) {
+      throw new Error("Institute not found");
+    }
+  }
+
+  async createInstituteWithDemoData(): Promise<Institute> {
+    const demoData: InsertInstitute = {
+      name: "Example International School",
+      shortName: "EIS",
+      address: "123 Education Lane, Academic City, State 12345",
+      phone: "+1 (555) 123-4567",
+      email: "info@example-school.edu",
+      website: "https://www.example-school.edu",
+      established: "1995",
+      accreditation: "Regional Board of Education",
+      principalName: "Dr. Sarah Johnson",
+      principalEmail: "principal@example-school.edu",
+      motto: "Excellence Through Learning",
+      description: "A premier educational institution committed to nurturing young minds and fostering academic excellence.",
+      boardAffiliation: "State Board of Education",
+      registrationNumber: "SCH-REG-2024-001",
+      studentCount: "1284",
+      teacherCount: "85",
+      classCount: "42"
+    };
+
+    const result = await db.insert(institutes).values(demoData).returning();
+    return result[0];
   }
 }
 

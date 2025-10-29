@@ -108,3 +108,70 @@ export const insertAttendanceSchema = createInsertSchema(attendance)
 
 export type InsertAttendance = z.infer<typeof insertAttendanceSchema>;
 export type Attendance = typeof attendance.$inferSelect;
+
+export const institutes = pgTable("institutes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  shortName: text("short_name"),
+  address: text("address"),
+  phone: text("phone"),
+  email: text("email"),
+  website: text("website"),
+  established: text("established"),
+  accreditation: text("accreditation"),
+  principalName: text("principal_name"),
+  principalEmail: text("principal_email"),
+  motto: text("motto"),
+  description: text("description"),
+  boardAffiliation: text("board_affiliation"),
+  registrationNumber: text("registration_number"),
+  studentCount: text("student_count"),
+  teacherCount: text("teacher_count"),
+  classCount: text("class_count"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertInstituteSchema = createInsertSchema(institutes)
+  .pick({
+    name: true,
+    shortName: true,
+    address: true,
+    phone: true,
+    email: true,
+    website: true,
+    established: true,
+    accreditation: true,
+    principalName: true,
+    principalEmail: true,
+    motto: true,
+    description: true,
+    boardAffiliation: true,
+    registrationNumber: true,
+    studentCount: true,
+    teacherCount: true,
+    classCount: true,
+  })
+  .transform((data) => ({
+    ...data,
+    // Convert empty strings to null for optional fields
+    shortName: data.shortName && data.shortName.trim() !== '' ? data.shortName : null,
+    address: data.address && data.address.trim() !== '' ? data.address : null,
+    phone: data.phone && data.phone.trim() !== '' ? data.phone : null,
+    email: data.email && data.email.trim() !== '' ? data.email : null,
+    website: data.website && data.website.trim() !== '' ? data.website : null,
+    established: data.established && data.established.trim() !== '' ? data.established : null,
+    accreditation: data.accreditation && data.accreditation.trim() !== '' ? data.accreditation : null,
+    principalName: data.principalName && data.principalName.trim() !== '' ? data.principalName : null,
+    principalEmail: data.principalEmail && data.principalEmail.trim() !== '' ? data.principalEmail : null,
+    motto: data.motto && data.motto.trim() !== '' ? data.motto : null,
+    description: data.description && data.description.trim() !== '' ? data.description : null,
+    boardAffiliation: data.boardAffiliation && data.boardAffiliation.trim() !== '' ? data.boardAffiliation : null,
+    registrationNumber: data.registrationNumber && data.registrationNumber.trim() !== '' ? data.registrationNumber : null,
+    studentCount: data.studentCount && data.studentCount.trim() !== '' ? data.studentCount : null,
+    teacherCount: data.teacherCount && data.teacherCount.trim() !== '' ? data.teacherCount : null,
+    classCount: data.classCount && data.classCount.trim() !== '' ? data.classCount : null,
+  }));
+
+export type InsertInstitute = z.infer<typeof insertInstituteSchema>;
+export type Institute = typeof institutes.$inferSelect;

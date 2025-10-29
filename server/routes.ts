@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema, insertAttendanceSchema, users, attendance } from "@shared/schema";
+import { insertUserSchema, insertAttendanceSchema, users, attendance, insertInstituteSchema, institutes } from "@shared/schema";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { requireAdmin, requireTeacher } from "./middleware";
@@ -35,6 +35,35 @@ const updateAttendanceSchema = createInsertSchema(attendance)
     section: true,
   })
   .partial();
+
+// Create a simple update schema for institutes (without complex transforms)
+const updateInstituteSchema = z.object({
+  name: z.string().optional(),
+  shortName: z.string().optional(),
+  address: z.string().optional(),
+  phone: z.string().optional(),
+  email: z.string().optional(),
+  website: z.string().optional(),
+  established: z.string().optional(),
+  accreditation: z.string().optional(),
+  principalName: z.string().optional(),
+  principalEmail: z.string().optional(),
+  motto: z.string().optional(),
+  description: z.string().optional(),
+  boardAffiliation: z.string().optional(),
+  registrationNumber: z.string().optional(),
+  studentCount: z.string().optional(),
+  teacherCount: z.string().optional(),
+  classCount: z.string().optional(),
+}).transform((data) => {
+  // Convert empty strings to null for optional fields
+  return Object.fromEntries(
+    Object.entries(data).map(([key, value]) => [
+      key,
+      value === undefined ? undefined : (typeof value === 'string' && value.trim() === '' ? null : value)
+    ])
+  );
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // put application routes here
@@ -437,6 +466,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(500).json({ message: "Internal server error" });
       }
+    }
+  });
+
+  // Institute routes
+  // GET /api/institute/current - Get current institute data (create with demo if none exists)
+  app.get("/api/institute/current", async (req, res) => {
+    try {
+      let institute = await storage.getCurrentInstitute();
+
+      // If no institute exists, create one with demo data
+      if (!institute) {
+        console.log("No institute found, creating with demo data");
+        institute = await storage.createInstituteWithDemoData();
+        console.log("Created institute with demo data:", institute);
+      }
+
+      res.json(institute);
+    } catch (error) {
+      console.error("Get current institute error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // PUT /api/institute/current - Update current institute data
+  app.put("/api/institute/current", requireAdmin, async (req, res) => {
+    try {
+      const instituteData = req.body;
+
+      // Validate the update data
+      const validatedData = updateInstituteSchema.parse(instituteData);
+
+      // Get current institute or create one if it doesn't exist
+      let institute = await storage.getCurrentInstitute();
+      if (!institute) {
+        institute = await storage.createInstituteWithDemoData();
+      }
+
+      // Update the institute
+      const updatedInstitute = await storage.updateInstitute(institute.id, validatedData);
+      res.json(updatedInstitute);
+    } catch (error: any) {
+      console.error("Update institute error:", error);
+      if (error.message === "Institute not found") {
+        res.status(404).json({ message: "Institute not found" });
+      } else {
+        res.status(400).json({ message: "Invalid institute data: " + error.message });
+      }
+    }
+  });
+
+  // POST /api/institute/create - Create new institute (for multi-institute systems)
+  app.post("/api/institute/create", requireAdmin, async (req, res) => {
+    try {
+      const instituteData = insertInstituteSchema.parse(req.body);
+      const institute = await storage.createInstitute(instituteData);
+      res.status(201).json(institute);
+    } catch (error: any) {
+      console.error("Create institute error:", error);
+      res.status(400).json({ message: "Invalid institute data: " + error.message });
     }
   });
 

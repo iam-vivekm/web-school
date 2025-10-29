@@ -73,6 +73,12 @@ const menuItems = {
         { title: "Notice Board", url: "/admin/notices", icon: MessageSquare },
         { title: "Messages", url: "/admin/messages", icon: MessageSquare },
       ]
+    },
+    {
+      title: "Settings",
+      items: [
+        { title: "Institute Information", url: "/admin/settings/institute-name", icon: Settings },
+      ]
     }
   ],
   teacher: [
@@ -220,23 +226,6 @@ export function AppSidebar({
             </SidebarGroupContent>
           </SidebarGroup>
         ))}
-        
-        {/* Settings Group */}
-        <SidebarGroup>
-          <SidebarGroupLabel>System</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild data-testid="nav-item-settings">
-                  <a href="/settings">
-                    <Settings className="h-4 w-4" />
-                    <span>Settings</span>
-                  </a>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
       </SidebarContent>
       
       <SidebarFooter>

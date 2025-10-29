@@ -2,6 +2,8 @@ import { useLocation } from "wouter";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { Dashboard } from "./Dashboard";
+import { SettingsInstituteName } from "./SettingsInstituteName";
+import AdminSettings from "./AdminSettings";
 import { ThemeToggle } from "./ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { School, Plus, Edit, Trash2 } from "lucide-react";
@@ -1529,6 +1531,11 @@ export function AdminPortal() {
         return <AdminNotices />;
       case 'analytics':
         return <AdminAnalytics />;
+      case 'settings':
+        if (pathParts[2] === 'institute-name') {
+          return <SettingsInstituteName />;
+        }
+        return <AdminSettings />;
       case 'subjects':
         if (pathParts[2] === 'classes-with-subjects') {
           return <ClassesWithSubjects />;
