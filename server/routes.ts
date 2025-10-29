@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema, insertAttendanceSchema, users, attendance, insertInstituteSchema, institutes } from "@shared/schema";
+import { insertUserSchema, insertAttendanceSchema, users, attendance, insertInstituteSchema, institutes } from "@/shared/schema";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { requireAdmin, requireTeacher } from "./middleware";
