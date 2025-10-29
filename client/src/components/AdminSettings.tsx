@@ -118,6 +118,9 @@ export function AdminSettings() {
     emailFrequency: "immediate"
   });
 
+  // Type definitions for notification settings
+  type NotificationSection = 'emailNotifications' | 'smsNotifications' | 'pushNotifications';
+
   // Security Settings State
   const [securitySettings, setSecuritySettings] = useState({
     twoFactorAuth: true,
@@ -191,10 +194,10 @@ export function AdminSettings() {
     setUserManagement(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleNotificationChange = (section: string, field: string, value: boolean) => {
+  const handleNotificationChange = (section: NotificationSection, field: string, value: boolean) => {
     setNotificationSettings(prev => ({
       ...prev,
-      [section]: { ...prev[section], [field]: value }
+      [section]: { ...(prev[section] as any), [field]: value }
     }));
   };
 
@@ -202,8 +205,8 @@ export function AdminSettings() {
     setSecuritySettings(prev => ({ ...prev, [field]: value }));
   };
 
-  const handlePaymentChange = (field: string, value: string | number | boolean) => {
-    setPaymentSettings(prev => ({ ...prev, [field]: value }));
+  const handlePaymentChange = (field: string, value: string | number | boolean | string[]) => {
+    setPaymentSettings(prev => ({ ...prev, [field]: Array.isArray(value) ? value.join(', ') : value }));
   };
 
   const handleSystemChange = (field: string, value: string | number | boolean) => {
@@ -598,27 +601,27 @@ export function AdminSettings() {
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Label>Student Registration</Label>
-                  <Checkbox checked={notificationSettings.emailNotifications.studentRegistration} onCheckedChange={(checked) => handleNotificationChange('emailNotifications', 'studentRegistration', checked)} />
+                  <Checkbox checked={notificationSettings.emailNotifications.studentRegistration} onCheckedChange={(checked: boolean) => handleNotificationChange('emailNotifications', 'studentRegistration', checked)} />
                 </div>
                 <div className="flex items-center justify-between">
                   <Label>Teacher Assignment</Label>
-                  <Checkbox checked={notificationSettings.emailNotifications.teacherAssignment} onCheckedChange={(checked) => handleNotificationChange('emailNotifications', 'teacherAssignment', checked)} />
+                  <Checkbox checked={notificationSettings.emailNotifications.teacherAssignment} onCheckedChange={(checked: boolean) => handleNotificationChange('emailNotifications', 'teacherAssignment', checked)} />
                 </div>
                 <div className="flex items-center justify-between">
                   <Label>Fee Reminders</Label>
-                  <Checkbox checked={notificationSettings.emailNotifications.feeReminders} onCheckedChange={(checked) => handleNotificationChange('emailNotifications', 'feeReminders', checked)} />
+                  <Checkbox checked={notificationSettings.emailNotifications.feeReminders} onCheckedChange={(checked: boolean) => handleNotificationChange('emailNotifications', 'feeReminders', checked)} />
                 </div>
                 <div className="flex items-center justify-between">
                   <Label>Exam Results</Label>
-                  <Checkbox checked={notificationSettings.emailNotifications.examResults} onCheckedChange={(checked) => handleNotificationChange('emailNotifications', 'examResults', checked)} />
+                  <Checkbox checked={notificationSettings.emailNotifications.examResults} onCheckedChange={(checked: boolean) => handleNotificationChange('emailNotifications', 'examResults', checked)} />
                 </div>
                 <div className="flex items-center justify-between">
                   <Label>Attendance Alerts</Label>
-                  <Checkbox checked={notificationSettings.emailNotifications.attendanceAlerts} onCheckedChange={(checked) => handleNotificationChange('emailNotifications', 'attendanceAlerts', checked)} />
+                  <Checkbox checked={notificationSettings.emailNotifications.attendanceAlerts} onCheckedChange={(checked: boolean) => handleNotificationChange('emailNotifications', 'attendanceAlerts', checked)} />
                 </div>
                 <div className="flex items-center justify-between">
                   <Label>Emergency Alerts</Label>
-                  <Checkbox checked={notificationSettings.emailNotifications.emergencyAlerts} onCheckedChange={(checked) => handleNotificationChange('emailNotifications', 'emergencyAlerts', checked)} />
+                  <Checkbox checked={notificationSettings.emailNotifications.emergencyAlerts} onCheckedChange={(checked: boolean) => handleNotificationChange('emailNotifications', 'emergencyAlerts', checked)} />
                 </div>
               </CardContent>
             </Card>
@@ -630,27 +633,27 @@ export function AdminSettings() {
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Label>Attendance Alerts</Label>
-                  <Checkbox checked={notificationSettings.smsNotifications.attendanceAlerts} onCheckedChange={(checked) => handleNotificationChange('smsNotifications', 'attendanceAlerts', checked)} />
+                  <Checkbox checked={notificationSettings.smsNotifications.attendanceAlerts} onCheckedChange={(checked: boolean) => handleNotificationChange('smsNotifications', 'attendanceAlerts', checked)} />
                 </div>
                 <div className="flex items-center justify-between">
                   <Label>Fee Payments</Label>
-                  <Checkbox checked={notificationSettings.smsNotifications.feePayments} onCheckedChange={(checked) => handleNotificationChange('smsNotifications', 'feePayments', checked)} />
+                  <Checkbox checked={notificationSettings.smsNotifications.feePayments} onCheckedChange={(checked: boolean) => handleNotificationChange('smsNotifications', 'feePayments', checked)} />
                 </div>
                 <div className="flex items-center justify-between">
                   <Label>Exam Schedules</Label>
-                  <Checkbox checked={notificationSettings.smsNotifications.examSchedules} onCheckedChange={(checked) => handleNotificationChange('smsNotifications', 'examSchedules', checked)} />
+                  <Checkbox checked={notificationSettings.smsNotifications.examSchedules} onCheckedChange={(checked: boolean) => handleNotificationChange('smsNotifications', 'examSchedules', checked)} />
                 </div>
                 <div className="flex items-center justify-between">
                   <Label>Emergency Alerts</Label>
-                  <Checkbox checked={notificationSettings.smsNotifications.emergencyAlerts} onCheckedChange={(checked) => handleNotificationChange('smsNotifications', 'emergencyAlerts', checked)} />
+                  <Checkbox checked={notificationSettings.smsNotifications.emergencyAlerts} onCheckedChange={(checked: boolean) => handleNotificationChange('smsNotifications', 'emergencyAlerts', checked)} />
                 </div>
                 <div className="flex items-center justify-between">
                   <Label>Report Cards</Label>
-                  <Checkbox checked={notificationSettings.smsNotifications.reportCards} onCheckedChange={(checked) => handleNotificationChange('smsNotifications', 'reportCards', checked)} />
+                  <Checkbox checked={notificationSettings.smsNotifications.reportCards} onCheckedChange={(checked: boolean) => handleNotificationChange('smsNotifications', 'reportCards', checked)} />
                 </div>
                 <div className="flex items-center justify-between">
                   <Label>Birthdays</Label>
-                  <Checkbox checked={notificationSettings.smsNotifications.birthdays} onCheckedChange={(checked) => handleNotificationChange('smsNotifications', 'birthdays', checked)} />
+                  <Checkbox checked={notificationSettings.smsNotifications.birthdays} onCheckedChange={(checked: boolean) => handleNotificationChange('smsNotifications', 'birthdays', checked)} />
                 </div>
               </CardContent>
             </Card>
@@ -662,19 +665,19 @@ export function AdminSettings() {
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Label>Announcements</Label>
-                  <Checkbox checked={notificationSettings.pushNotifications.announcements} onCheckedChange={(checked) => handleNotificationChange('pushNotifications', 'announcements', checked)} />
+                  <Checkbox checked={notificationSettings.pushNotifications.announcements} onCheckedChange={(checked: boolean) => handleNotificationChange('pushNotifications', 'announcements', checked)} />
                 </div>
                 <div className="flex items-center justify-between">
                   <Label>Deadlines</Label>
-                  <Checkbox checked={notificationSettings.pushNotifications.deadlines} onCheckedChange={(checked) => handleNotificationChange('pushNotifications', 'deadlines', checked)} />
+                  <Checkbox checked={notificationSettings.pushNotifications.deadlines} onCheckedChange={(checked: boolean) => handleNotificationChange('pushNotifications', 'deadlines', checked)} />
                 </div>
                 <div className="flex items-center justify-between">
                   <Label>Messages</Label>
-                  <Checkbox checked={notificationSettings.pushNotifications.messages} onCheckedChange={(checked) => handleNotificationChange('pushNotifications', 'messages', checked)} />
+                  <Checkbox checked={notificationSettings.pushNotifications.messages} onCheckedChange={(checked: boolean) => handleNotificationChange('pushNotifications', 'messages', checked)} />
                 </div>
                 <div className="flex items-center justify-between">
                   <Label>Updates</Label>
-                  <Checkbox checked={notificationSettings.pushNotifications.updates} onCheckedChange={(checked) => handleNotificationChange('pushNotifications', 'updates', checked)} />
+                  <Checkbox checked={notificationSettings.pushNotifications.updates} onCheckedChange={(checked: boolean) => handleNotificationChange('pushNotifications', 'updates', checked)} />
                 </div>
               </CardContent>
             </Card>

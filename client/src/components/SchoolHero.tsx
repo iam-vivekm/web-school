@@ -133,9 +133,9 @@ export function SchoolHero({
             </div>
             
             <div className="relative">
-              <img 
-                src={buildingImage} 
-                alt="Modern school building" 
+              <img
+                src={(buildingImage as any).src || buildingImage}
+                alt="Modern school building"
                 className="rounded-lg shadow-xl w-full h-auto"
                 data-testid="img-school-building"
               />
