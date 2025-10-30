@@ -7,13 +7,13 @@ export default defineConfig(async () => {
   // Add React plugin
   plugins.push((await import("@vitejs/plugin-react")).default());
 
-  // Conditionally add Replit plugins only in Replit environment
-  if (process.env.NODE_ENV !== "production" && process.env.REPL_ID !== undefined) {
+  // ✅ Only load Replit plugins in Replit environment
+  if (process.env.REPL_ID !== undefined) {
     const runtimeErrorOverlay = (await import("@replit/vite-plugin-runtime-error-modal")).default;
     const cartographer = (await import("@replit/vite-plugin-cartographer")).cartographer();
     const devBanner = (await import("@replit/vite-plugin-dev-banner")).devBanner();
 
-    plugins.push(runtimeErrorOverlay(), cartographer, devBanner);
+    plugins.push(runtimeErrorOverlay, cartographer, devBanner);
   }
 
   return {
